@@ -2,3 +2,4 @@
 *.json
 Detectron/*
 *.mp4
+detectron-output/*

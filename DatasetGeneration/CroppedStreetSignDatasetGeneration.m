@@ -1,30 +1,30 @@
-directory = '/home/vtpc/Documents/Alvils/traffic-sign-detection/data/signs';
+directory = '/home/vtpc/Documents/Alvils/traffic-sign-detection/data/cropped_signs';
 video = VideoReader('/home/vtpc/Documents/Alvils/traffic-sign-detection/data/videos/vid1.mp4');
-path_to_data = "/home/vtpc/Documents/Alvils/traffic-sign-detection/data/dataset/";
-path_to_annotations = path_to_data + "dataset.json";
+path_to_data = "/home/vtpc/Documents/Alvils/traffic-sign-detection/data/datasets/";
+path_to_annotations = path_to_data + "annotations/cropped.json";
 
 annotations = LoadAnnotations(path_to_annotations);
 
 video.CurrentTime = 0;
 nb_of_frames = video.Duration * video.FrameRate;
-frame_from = video.FrameRate * 10;
+frame_from = round(video.FrameRate * 10);
 frame_to = round(nb_of_frames - video.FrameRate * 10);
 
 %% binarizes imgs
 object_imgs = LoadImgs(directory, 'jpg')
 nb_of_classes = length(object_imgs)
-nb_of_imgs_per_class = 30;
+nb_of_imgs_per_class = 10000;
 for i = 1:nb_of_classes
-    binarized__object_imgs{i} = GetBinarizedImg(object_imgs{1}, 0.9);
+    binarized__object_imgs{i} = GetBinarizedImg(object_imgs{i}, 0.9);
 end
-
+t = 0;
 %% adds categories
 for i = 1:nb_of_classes
     categories = struct;
-    categories.supercategory = "cat_" + string(i);
+    categories.supercategory = string(i);
     categories.id = i;
     categories.keypoints = {};
-    categories.name = "cat_" + string(i);
+    categories.name = string(i);
     categories.skeleton =  {};
     annotations.categories{end + 1} = categories;
 end
@@ -38,19 +38,26 @@ black_rgb = [0 0 0]';
 for i = 1:nb_of_classes
     object_img = object_imgs{i};
     object_binary_img = binarized__object_imgs{i};
+    i
     for j = 1:nb_of_imgs_per_class
+        t = t+1;
         % rotation
         rotation_angle = randi([-35, 35]);
         rotated_img = RotateImg(object_img, rotation_angle);
         rotated_object_binary_img = RotateImg(object_binary_img, rotation_angle);
+        %%
+        % 
+        %  PREFORMATTED
+        %  TEXT
+        % 
         % shears image
         shear_angle_x = randi([-15, 15]);
-        shear_angle_y = randi([-15, 15]);
+        shear_angle_y = randi([-75, 75]);
         sheared_img = ShearImg(rotated_img, shear_angle_x, shear_angle_y);
-        sheared_object_binary_img = ShearImg(rotated_object_binary_img, shear_angle_x, 5);
-        imshow(sheared_img)
+        sheared_object_binary_img = ShearImg(rotated_object_binary_img, shear_angle_x, shear_angle_y);
+
         %flips horizontal
-        flip_img = randi([0 1]);
+        flip_img = 0;
         flipped_img = sheared_img;
         flipped_object_binary_img = sheared_object_binary_img;
         if(flip_img)
@@ -61,7 +68,7 @@ for i = 1:nb_of_classes
  
         %%
         brightness_from = 0.5;
-        brightness_to = 1.5
+        brightness_to = 1.5;
         brightness_coeff = (brightness_to - brightness_from)* rand() + brightness_from;
         contrasted_img = brightness_coeff * flipped_img;
         contrasted_img(contrasted_img > 255) = 255;
@@ -87,8 +94,8 @@ for i = 1:nb_of_classes
         img_data_index = find(flipped_object_binary_img > 0);
         [row, col] = ind2sub(size(flipped_object_binary_img), img_data_index);
        
-        obj_height = max(row) - min(row);
-        obj_width = max(col) - min(col)
+        obj_height = size(flipped_object_binary_img, 1);
+        obj_width = size(flipped_object_binary_img, 2);
         
         resize_coeff_from = 0.05;
         resize_coeff_to = 0.15;
@@ -119,9 +126,8 @@ for i = 1:nb_of_classes
         img_data_index = find(scaled_binary_obj_img > 0);
 
         [row, col] = ind2sub(size(scaled_binary_obj_img), img_data_index);
-        obj_height = max(row) - min(row);
-        obj_width = max(col) - min(col);
-        
+        obj_height = size(scaled_binary_obj_img, 1);
+        obj_width = size(scaled_binary_obj_img, 2);
         %%
         treshold_height_min = 1;
         treshold_height_max = frame_height - obj_height;
@@ -132,29 +138,41 @@ for i = 1:nb_of_classes
         top_left_x = randi([treshold_width_min treshold_width_max]);
         
         augmented_frame = cropped_frame;
-        for i = 1:size(row, 1)
-            augmented_frame(top_left_y + row(i), top_left_x + col(i), :) = blurred_obj_img(row(i), col(i), :);
+        for k = 1:size(row, 1)
+            augmented_frame(top_left_y + row(k), top_left_x + col(k), :) = blurred_obj_img(row(k), col(k), :);
         end
         
         blur_from = 0;
         blue_to = 3;
         blur_coeff = (blue_to - blur_from)* rand() + blur_from;
         blurred_augmented_img = augmented_frame;
-
         if (blur_coeff ~= 0)
-            blurred_augmented_img = imgaussfilt(augmented_frame, blur_coeff);
+        	blurred_augmented_img = imgaussfilt(augmented_frame, blur_coeff);
         end
+        
+       
+        brightness_from = 0.5;
+        brightness_to = 1.5;
+        brightness_coeff = (brightness_to - brightness_from)* rand() + brightness_from;
+        contrasted_augmented_img = brightness_coeff * blurred_augmented_img;
+        contrasted_augmented_img(contrasted_augmented_img > 255) = 255;
         bbox = [top_left_x - 1, top_left_y - 1, obj_width, obj_height];
-        annotations = AddAnnotations(annotations, blurred_augmented_img, bbox, i);   
-        img_path = path_to_data + annotations.images{end}.file_name;
-        imwrite(blurred_augmented_img, img_path);
+        %annotations = AddAnnotations(annotations, contrasted_augmented_img, bbox, (i));   
+        
+        crp_img = imcrop(contrasted_augmented_img, bbox+1);
 
+        img_path = path_to_data + "cropped/" + string(t) + ".jpg";
+        imwrite(crp_img, img_path);
+        if(mod(j, 10000) == 0)
+            j
+        end
     end
 end
 
 
 fid = fopen(path_to_annotations,'w');
-fprintf(fid, '%s', savejson('',annotations,'ArrayIndent',0));
+fprintf(fid, '%s', jsonencode(annotations));
+
 fclose(fid);
 
 

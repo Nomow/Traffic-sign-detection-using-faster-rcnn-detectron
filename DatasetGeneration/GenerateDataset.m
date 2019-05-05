@@ -88,8 +88,8 @@ for i = 1:nb_of_classes
         img_data_index = find(flipped_object_binary_img > 0);
         [row, col] = ind2sub(size(flipped_object_binary_img), img_data_index);
        
-        obj_height = max(row) - min(row);
-        obj_width = max(col) - min(col);
+        obj_height = size(flipped_object_binary_img, 1);
+        obj_width = size(flipped_object_binary_img, 2);
         
         resize_coeff_from = 0.05;
         resize_coeff_to = 0.15;
@@ -113,15 +113,16 @@ for i = 1:nb_of_classes
         end
         
         scaled_binary_obj_img = imresize(flipped_object_binary_img, new_coeff);
-        scaled_binary_obj_img(scaled_binary_obj_img > 0.99) = 1;
-        scaled_binary_obj_img(scaled_binary_obj_img < 0.99) = 0;
+        scaled_binary_obj_img(scaled_binary_obj_img > 0.5) = 1;
+        scaled_binary_obj_img(scaled_binary_obj_img < 0.5) = 0;
 
         %gets image pixels without background
         img_data_index = find(scaled_binary_obj_img > 0);
 
         [row, col] = ind2sub(size(scaled_binary_obj_img), img_data_index);
-        obj_height = max(row) - min(row);
-        obj_width = max(col) - min(col);
+        obj_height = size(scaled_binary_obj_img, 1);
+        obj_width = size(scaled_binary_obj_img, 2);
+
         
         %%
         treshold_height_min = 1;
