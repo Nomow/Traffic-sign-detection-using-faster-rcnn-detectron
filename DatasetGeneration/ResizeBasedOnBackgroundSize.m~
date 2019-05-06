@@ -1,0 +1,13 @@
+function [outputArg1,outputArg2] = ResizeBasedOnBackgroundSize(img, coeff, bg_width, bg_height)
+   
+    new_coeff = 0;
+    % scale coeff of obj depending on img size
+    if(frame_width > frame_height)
+         new_coeff =  (frame_width * resize_coeff) / obj_width; 
+        else
+            new_coeff =  (frame_height * resize_coeff) / obj_height; 
+        end
+        scaled_obj_img = imresize(contrasted_img, new_coeff);
+        
+end
+

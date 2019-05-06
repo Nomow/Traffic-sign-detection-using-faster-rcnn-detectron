@@ -1,7 +1,7 @@
 directory = '/home/vtpc/Documents/Alvils/traffic-sign-detection/data/signs';
 video = VideoReader('/home/vtpc/Documents/Alvils/traffic-sign-detection/data/videos/vid1.mp4');
 path_to_data = "/home/vtpc/Documents/Alvils/traffic-sign-detection/data/datasets/";
-path_to_annotations = path_to_data + "annotations/cropped.json";
+path_to_annotations = path_to_data + "annotations/val.json";
 
 annotations = LoadAnnotations(path_to_annotations);
 
@@ -12,7 +12,7 @@ frame_to = round(nb_of_frames - video.FrameRate * 10);
 
 object_imgs = LoadImgs(directory, 'jpg')
 nb_of_classes = length(object_imgs)
-nb_of_imgs_per_class = 10;
+nb_of_imgs_per_class = 1200;
 
 %% binarizes imgs
 for i = 1:nb_of_classes
@@ -53,8 +53,8 @@ for i = 1:nb_of_classes
 
         %% flips horizontal 
         flip_img = 0;
-        flipped_img = FlipHorizontal(sheared_img, flip_img);
-        flipped_object_binary_img = FlipHorizontal(sheared_object_binary_img, flip_img); 
+        flipped_img = FlipImg(sheared_img, flip_img);
+        flipped_object_binary_img = FlipImg(sheared_object_binary_img, flip_img); 
         
  
         %% adjust brightness
@@ -72,7 +72,7 @@ for i = 1:nb_of_classes
         
         %% flips horizontal frame     
         flip_frame = randi([0 1]);
-        flipped_frame = FlipHorizontal(cropped_frame, flip_frame);
+        flipped_frame = FlipImg(cropped_frame, flip_frame);
 
         [frame_height, frame_width, frame_dim] = size(cropped_frame);   
         
@@ -91,8 +91,8 @@ for i = 1:nb_of_classes
         blur_from = 0;
         blue_to = 1;
         blur_coeff = (blue_to - blur_from)* rand() + blur_from;
-        blurred_obj_img = BlurImg(scaled_obj_img, blur_coeff);
-        blurred_binary_obj_img = BlurImg(scaled_binary_obj_img, blur_coeff);
+        blurred_obj_img = BlurImg(scaled_obj_img, blur_coeff)
+        blurred_binary_obj_img = BlurImg(scaled_binary_obj_img, blur_coeff)
         blurred_binary_obj_img(blurred_binary_obj_img > 0.5) = 1;
         blurred_binary_obj_img(blurred_binary_obj_img < 0.5) = 0;  
 
@@ -104,29 +104,39 @@ for i = 1:nb_of_classes
         obj_width = size(blurred_binary_obj_img, 2);
 
         
-        %% random tanslate
-        [top_left_x, top_left_y] = TranslateRnd(frame_width, frame_height, obj_width, obj_height);
-       
-        %% augment
-        augmented_frame = AugmentFrame(cropped_frame, blurred_obj_img, top_left_x, top_left_y, col, row);
+        %%
+        treshold_height_min = 1;
+        treshold_height_max = frame_height - obj_height;
+        top_left_y = randi([treshold_height_min treshold_height_max]);
         
-        %% blurs augmented frame
+        treshold_width_min = 1;
+        treshold_width_max = frame_width - obj_width;
+        top_left_x = randi([treshold_width_min treshold_width_max]);
+        
+        augmented_frame = cropped_frame;
+        for k = 1:size(row, 1)
+            augmented_frame(top_left_y + row(k), top_left_x + col(k), :) = blurred_obj_img(row(k), col(k), :);
+        end
+        
         blur_from = 0;
         blue_to = 3;
         blur_coeff = (blue_to - blur_from)* rand() + blur_from;
-        blurred_augmented_img = BlurImg(augmented_frame, blur_coeff);
-
-        %% brightness adjusting
+        blurred_augmented_img = augmented_frame;
+        if (blur_coeff ~= 0)
+        	blurred_augmented_img = imgaussfilt(augmented_frame, blur_coeff);
+        end
+        
+       
         brightness_from = 0.5;
         brightness_to = 1.5;
         brightness_coeff = (brightness_to - brightness_from)* rand() + brightness_from;
-        contrasted_augmented_img = AdjustBrightness(blurred_augmented_img, brightness_coeff);
+        contrasted_augmented_img = brightness_coeff * blurred_augmented_img;
+        contrasted_augmented_img(contrasted_augmented_img > 255) = 255;
 
-        %% caluclates bbox and adds to annotations file
+ 
         bbox = [top_left_x - 1, top_left_y - 1, obj_width, obj_height];
         annotations = AddAnnotations(annotations, contrasted_augmented_img, bbox, (i));   
-        img_path = path_to_data + "cropped/" + annotations.images{end}.file_name;
-        %% saves img
+        img_path = path_to_data + "val/" + annotations.images{end}.file_name;
         imwrite(contrasted_augmented_img, img_path);
         if(mod(j, 10000) == 0)
             j
@@ -134,7 +144,7 @@ for i = 1:nb_of_classes
     end
 end
 
-%% saves to json
+
 fid = fopen(path_to_annotations,'w');
 fprintf(fid, '%s', jsonencode(annotations));
 
