@@ -1,5 +1,3 @@
-#!/usr/bin/env python2
-
 # Copyright (c) 2017-present, Facebook, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,10 +13,8 @@
 # limitations under the License.
 ##############################################################################
 
-"""Perform a simple inference on a single image or all images with a certain extension
+"""Perform inference on a single image or all images with a certain extension
 (e.g., .jpg) in a folder.
-
-Original source: https://github.com/facebookresearch/Detectron/blob/master/tools/infer_simple.py
 """
 
 from __future__ import absolute_import
@@ -37,19 +33,19 @@ import time
 
 from caffe2.python import workspace
 
-from core.config import assert_and_infer_cfg
-from core.config import cfg
-from core.config import merge_cfg_from_file
-from utils.timer import Timer
-import core.test_engine as infer_engine
-import datasets.dummy_datasets as dummy_datasets
-import utils.c2 as c2_utils
-import utils.logging
-import utils.vis as vis_utils
-
-
+from detectron.core.config import assert_and_infer_cfg
+from detectron.core.config import cfg
+from detectron.core.config import merge_cfg_from_file
+from detectron.utils.io import cache_url
+from detectron.utils.logging import setup_logging
+from detectron.utils.timer import Timer
+import detectron.core.test_engine as infer_engine
+import detectron.datasets.dummy_datasets as dummy_datasets
+import detectron.utils.c2 as c2_utils
+import detectron.utils.vis as vis_utils
 
 c2_utils.import_detectron_ops()
+
 # OpenCL may be enabled by default in OpenCV3; disable it because it's not
 # thread safe and causes unwanted GPU memory allocations.
 cv2.ocl.setUseOpenCL(False)
@@ -86,10 +82,14 @@ def parse_args():
         type=str
     )
     parser.add_argument(
-        '--im_or_folder',  dest='im_or_folder', help='image or folder of images', default=None
+        'im_or_folder', help='image or folder of images', default=None
     )
     parser.add_argument(
-        '--video_full_path', dest='video_full_path', help='video path', default=None,  type=str
+        '--video_full_path',
+        dest='video_full_path',
+        help='video file',
+        default=None,
+        type=str
     )
     if len(sys.argv) == 1:
         parser.print_help()
@@ -103,8 +103,9 @@ def main(args):
     cfg.TEST.WEIGHTS = args.weights
     cfg.NUM_GPUS = 1
     assert_and_infer_cfg()
-    model = infer_engine.initialize_model_from_cfg()
+    model = infer_engine.initialize_model_from_cfg(args.weights)
     dummy_coco_dataset = dummy_datasets.get_coco_dataset()
+
 
     if os.path.isdir(args.im_or_folder):
         im_list = glob.iglob(args.im_or_folder + '/*.' + args.image_ext)
@@ -116,13 +117,23 @@ def main(args):
     """
     # Set and get camera from OpenCV
     cam = cv2.VideoCapture(args.video_full_path)
-
+    cam.set(cv2.CAP_PROP_FRAME_WIDTH, 800);
+    cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 600);
     im_name = 'tmp_im'
 
     while True:
         # Fetch image from camera
         _, im = cam.read()
+        ratio = 0;
+        if(im.shape[0] < im.shape[1]):
+            ratio = 800 / im.shape[1]
+        else:
+            ratio = 600 / im.shape[0]
 
+        im = cv2.resize(im, (0,0), fx=ratio, fy=ratio) 
+
+
+        print(im.shape[0], im.shape[1] , im.shape[2])
         timers = defaultdict(Timer)
         t = time.time()
 
@@ -149,7 +160,7 @@ def main(args):
             dataset=dummy_coco_dataset,
             box_alpha=0.3,
             show_class=True,
-            thresh=0.7,
+            thresh=0.9,
             kp_thresh=2,
             ext='jpg'  # default is PDF, but we want JPG.
         )
@@ -158,6 +169,6 @@ def main(args):
 
 if __name__ == '__main__':
     workspace.GlobalInit(['caffe2', '--caffe2_log_level=0'])
-    utils.logging.setup_logging(__name__)
+    setup_logging(__name__)
     args = parse_args()
     main(args)

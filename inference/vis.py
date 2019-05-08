@@ -1,23 +1,3 @@
-# Copyright (c) 2017-present, Facebook, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-##############################################################################
-
-"""Detection output visualization module.
-
-Original source: https://github.com/facebookresearch/Detectron/blob/master/lib/utils/vis.py
-"""
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -29,17 +9,15 @@ import os
 
 import pycocotools.mask as mask_util
 
-from utils.colormap import colormap
-import utils.env as envu
-import utils.keypoints as keypoint_utils
+from detectron.utils.colormap import colormap
+import detectron.utils.env as envu
+import detectron.utils.keypoints as keypoint_utils
 
 # Matplotlib requires certain adjustments in some environments
 # Must happen before importing matplotlib
 envu.set_up_matplotlib()
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas  # added for webcam support
-from matplotlib.figure import Figure  # added for webcam support
 
 plt.rcParams['pdf.fonttype'] = 42  # For editing in Adobe Illustrator
 
@@ -47,8 +25,6 @@ plt.rcParams['pdf.fonttype'] = 42  # For editing in Adobe Illustrator
 _GRAY = (218, 227, 218)
 _GREEN = (18, 127, 15)
 _WHITE = (255, 255, 255)
-
-
 def kp_connections(keypoints):
     kp_lines = [
         [keypoints.index('left_eye'), keypoints.index('right_eye')],
@@ -133,7 +109,7 @@ def vis_class(img, pos, class_str, font_scale=0.35):
     return img
 
 
-def vis_bbox(img, bbox, thick=1):
+def vis_bbox(img, bbox, thick=3):
     """Visualizes a bounding box."""
     (x0, y0, w, h) = bbox
     x1, y1 = int(x0 + w), int(y0 + h)
