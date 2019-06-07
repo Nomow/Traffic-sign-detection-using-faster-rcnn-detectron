@@ -2,7 +2,7 @@
 Based on [Detectron](https://github.com/facebookresearch/Detectron.git) - by FacebookResearch.
 
 ## Information
-Uses Faster-rcnn algorithm 
+Uses Faster-rcnn algorithm for street sign detection
 
 ## installation
 ```
