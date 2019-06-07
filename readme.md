@@ -1,7 +1,7 @@
 # Traffic sign detection using faster-rcnn
 Based on [Detectron](https://github.com/facebookresearch/Detectron.git) - by FacebookResearch.
 
-## Information
+## Description
 Uses Faster-rcnn algorithm for street sign detection
 
 ## Installation
