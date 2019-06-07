@@ -16,7 +16,7 @@ cd weights && wget https://doc-0o-4c-docs.googleusercontent.com/docs/securesc/dg
 ```
 ## training example
 ```
-python Detectron/tools/train_net.py \
+python2 Detectron/tools/train_net.py \
     --cfg config/12_2017_baselines/newcfg.yaml \
     OUTPUT_DIR detectron-output
 ```
