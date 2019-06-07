@@ -33,7 +33,7 @@ python2 Detectron/tools/inference.py \
 ```
 
 ## Dataset generation
-Run datasetGeneration.m file and add street signs and video to specific folders
+Run *datasetGeneration.m* file and add street signs and video to specific folders
 
 
 
